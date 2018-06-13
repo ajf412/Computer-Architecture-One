@@ -5,6 +5,16 @@ const LDI = 0b10011001;
 const PRN = 0b01000011;
 const HLT = 0b00000001;
 const MUL = 0b10101010;
+const ADD = 0b10101000;
+const SUB = 0b10101001;
+const DIV = 0b10101011;
+const INC = 0b01111000;
+const DEC = 0b01111001;
+const CMP = 0b10100000;
+const PUSH = 0b01001101;
+const POP = 0b01001100;
+let SP = 0xf3;
+console.log(SP);
 /**
  * Class for simulating a simple Computer (CPU & memory)
  */
@@ -58,7 +68,29 @@ class CPU {
     alu(op, regA, regB) {
         switch (op) {
             case 'MUL':
-                this.reg[regA] *= this.reg[regB];
+                this.reg[regA] = (this.reg[regB] * this.reg[regA]) & 0xff;
+                break;
+            case 'ADD':
+                this.reg[regA] = (this.reg[regB] + this.reg[regA]) & 0xff;
+                break;
+            case 'SUB':
+                this.reg[regA] = (this.reg[regA] - this.reg[regB]) & 0xff;
+                break;
+            case 'DIV':
+                if(regB === 0) {
+                    IR = HLT;
+                    console.error('Cannot divide by 0');
+                    break;
+                }
+                this.reg[regA] = (this.reg[regA] / this.reg[regB]) & 0xff;
+                break;
+            case 'INC':
+                this.reg[regA] = this.reg[regA] + 1;
+                break;
+            case 'DEC':
+                this.reg[regA] = this.reg[regA] - 1;
+                break;
+            case 'CMP':
                 break;
         }
     }
@@ -93,7 +125,7 @@ class CPU {
                 break;
             
             case PRN:
-                console.log(this.reg[operandA])
+                console.log(this.reg[operandA]);
                 this.PC +=2;
                 break;
 
@@ -106,6 +138,54 @@ class CPU {
                 this.PC += 3;
                 break;
 
+            case ADD:
+                this.alu('ADD', operandA, operandB);
+                this.PC += 3;
+                break;
+
+            case SUB:
+                this.alu('SUB', operandA, operandB);
+                this.PC += 3;
+                break;
+
+            case DIV:
+                this.alu('DIV', operandA, operandB);
+                this.PC += 3;
+                break;
+
+            case INC:
+                this.alu('INC', operandA);
+                this.PC += 2;
+                break;
+            
+            case DEC:
+                this.alu('DEC', operandA);
+                this.PC += 2;
+                break;
+            
+            case CMP:
+                this.alu('CMP', operandA, operandB);
+                this.PC += 3;
+                break;
+
+            case PUSH:
+                console.log(this.reg);
+                console.log("A: ", operandA);
+                console.log("0: ", this.reg[operandA]);
+                SP = SP - 1;
+                this.reg[SP] = this.reg[operandA];
+                console.log("Pointer: ", this.reg[SP]);
+                console.log(this.reg, " SP: ", SP);
+                this.PC +=2;
+                break;
+
+            case POP:
+                this.reg[operandA] = this.reg[SP];
+                console.log(this.reg, " SP: ", SP);
+                SP= SP + 1;
+                this.PC +=2;
+                break;
+
             default:
                 console.log("Defaulted case, PC: " , this.PC);
                 break;
@@ -115,8 +195,9 @@ class CPU {
         // can be 1, 2, or 3 bytes long. Hint: the high 2 bits of the
         // instruction byte tells you how many bytes follow the instruction byte
         // for any particular instruction.
-        
-        // !!! IMPLEMENT ME
+        // console.log("IR: ", parseInt(IR.toString(2).slice(0,2),2), " PC: ", this.PC);
+        // this.PC = this.PC + parseInt(IR.toString(2).slice(0,2),2);
+        // console.log("IR: ", parseInt(IR.toString(2).slice(0,2),2), " PC: ", this.PC);
     }
 }
 
