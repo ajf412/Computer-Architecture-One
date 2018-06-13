@@ -1,9 +1,10 @@
 /**
  * LS-8 v2.0 emulator skeleton code
  */
-const LDI = 10011001;
-const PRN = 01000011;
-const HLT = 00000001;
+const LDI = 0b10011001;
+const PRN = 0b01000011;
+const HLT = 0b00000001;
+const MUL = 0b10101010;
 /**
  * Class for simulating a simple Computer (CPU & memory)
  */
@@ -57,7 +58,7 @@ class CPU {
     alu(op, regA, regB) {
         switch (op) {
             case 'MUL':
-                // !!! IMPLEMENT ME
+                this.reg[regA] *= this.reg[regB];
                 break;
         }
     }
@@ -74,7 +75,7 @@ class CPU {
         const IR = this.ram.mem[this.PC];
 
         // Debugging output
-        console.log(`${this.PC}: ${IR.toString(2)}`);
+        // console.log(`${this.PC}: ${IR.toString(2)}`);
 
         // Get the two bytes in memory _after_ the PC in case the instruction
         // needs them.
@@ -86,14 +87,23 @@ class CPU {
         // outlined in the LS-8 spec.
 
         switch(IR) {
-            case "LDI":
-                console.log("LDI");
+            case LDI:
+                this.reg[operandA] = operandB;
                 this.PC += 3;
                 break;
             
-            case "PRN":
-                console.log("PRN")
+            case PRN:
+                console.log(this.reg[operandA])
                 this.PC +=2;
+                break;
+
+            case HLT:
+                this.stopClock();
+                break;
+
+            case MUL:
+                this.alu('MUL', operandA, operandB);
+                this.PC += 3;
                 break;
 
             default:
