@@ -13,8 +13,11 @@ const DEC = 0b01111001;
 const CMP = 0b10100000;
 const PUSH = 0b01001101;
 const POP = 0b01001100;
-let SP = 0xf3;
-console.log(SP);
+const CALL = 0b01001000;
+const RET = 0b00001001;
+
+let SP = 7;
+
 /**
  * Class for simulating a simple Computer (CPU & memory)
  */
@@ -30,6 +33,8 @@ class CPU {
         
         // Special-purpose registers
         this.PC = 0; // Program Counter
+
+        this.reg[SP] = 0xf4;
     }
     
     /**
@@ -117,16 +122,15 @@ class CPU {
 
         // Execute the instruction. Perform the actions for the instruction as
         // outlined in the LS-8 spec.
+        this.pcAdvance = true;
 
         switch(IR) {
             case LDI:
                 this.reg[operandA] = operandB;
-                this.PC += 3;
                 break;
             
             case PRN:
                 console.log(this.reg[operandA]);
-                this.PC +=2;
                 break;
 
             case HLT:
@@ -135,55 +139,57 @@ class CPU {
 
             case MUL:
                 this.alu('MUL', operandA, operandB);
-                this.PC += 3;
                 break;
 
             case ADD:
                 this.alu('ADD', operandA, operandB);
-                this.PC += 3;
                 break;
 
             case SUB:
                 this.alu('SUB', operandA, operandB);
-                this.PC += 3;
                 break;
 
             case DIV:
                 this.alu('DIV', operandA, operandB);
-                this.PC += 3;
                 break;
 
             case INC:
                 this.alu('INC', operandA);
-                this.PC += 2;
                 break;
             
             case DEC:
                 this.alu('DEC', operandA);
-                this.PC += 2;
                 break;
             
             case CMP:
                 this.alu('CMP', operandA, operandB);
-                this.PC += 3;
                 break;
 
             case PUSH:
-                console.log(this.reg);
-                console.log("A: ", operandA);
-                console.log("0: ", this.reg[operandA]);
-                SP = SP - 1;
-                this.reg[SP] = this.reg[operandA];
-                console.log("Pointer: ", this.reg[SP]);
-                console.log(this.reg, " SP: ", SP);
-                this.PC +=2;
+                console.log("SP starting at: ", this.reg[SP]);
+                this.reg[SP]--;
+                this.ram.write(this.reg[SP], this.reg[operandA]);
+                console.log("SP pushed to: ", this.reg[SP]);
                 break;
 
             case POP:
-                this.reg[operandA] = this.reg[SP];
-                console.log(this.reg, " SP: ", SP);
-                SP= SP + 1;
-                this.PC +=2;
+                console.log("SP starting at: ", this.reg[SP]);
+                this.reg[operandA] = this.ram.read(this.reg[SP]);
+                this.reg[SP]++;
+                console.log("SP popped to: ", this.reg[SP]);
+                break;
+
+            case CALL:
+                console.log("SP starting at: ", this.reg[SP]);
+                this.pushValue(this.PC + 2);
+                this.PC = operandA;
+                this.pcAdvance = false;
+                console.log("SP called to: ", this.reg[SP]);
+                break;
+
+            case RET:
+                this.PC = this.reg[SP];
+                this.pcAdvance = true;
                 break;
 
             default:
@@ -195,9 +201,15 @@ class CPU {
         // can be 1, 2, or 3 bytes long. Hint: the high 2 bits of the
         // instruction byte tells you how many bytes follow the instruction byte
         // for any particular instruction.
-        // console.log("IR: ", parseInt(IR.toString(2).slice(0,2),2), " PC: ", this.PC);
-        // this.PC = this.PC + parseInt(IR.toString(2).slice(0,2),2);
-        // console.log("IR: ", parseInt(IR.toString(2).slice(0,2),2), " PC: ", this.PC);
+        if(this.pcAdvance) {
+            const instLen = (IR >> 6) + 1;
+            this.PC += instLen;
+        }
+    }
+
+    pushValue(v) {
+        this.reg[SP]--;
+        this.ram.write(this.reg[SP], v);
     }
 }
 
